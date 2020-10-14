@@ -103,9 +103,9 @@ int ITK_user_main(int argc,char *argv[])
 				
 				//cFolderPath = tc_strcat(cFolderPath,cName);
 				iCheckFolderCreation = create_export_folder(cFolderPath);
-				cName = get_folder_name(cItem_id);
-				cFolderPath = tc_strcat(cFolderPath,cName);
-				create_export_folder(cFolderPath);
+				//cName = get_folder_name(cItem_id);
+				//cFolderPath = tc_strcat(cFolderPath,cName);
+				//create_export_folder(cFolderPath);
 				//printf("\t\t\n\n Error : Please enter proper folder path e.g E:\\Files \n");
 				//return ITK_ok;
 				//cName = get_folder_name(cItem_id,cRevId);
@@ -184,7 +184,9 @@ int ITK_user_main(int argc,char *argv[])
 						printf("\n\n\t\t Error : %s",cError);
 					}
 					BOM_close_window(tWindow);
+					fclose(pFile2);
 					fclose(pFile);
+					
 				/*}
 				else
 				{
@@ -398,8 +400,8 @@ char* get_folder_name(char* cItem_id)
 	char* cTemp = NULL;
 	char* item_id_rev = NULL;
 	char* cFolderName = NULL;
-	
-	char *timestamp = (char *)MEM_alloc(sizeof(char) * 16);
+	char timestamp[100];
+	//char *timestamp = (char *)MEM_alloc(sizeof(char) * 16);
 	time_t ltime;
 	struct tm *tm;
 	ltime=time(NULL);
@@ -411,6 +413,8 @@ char* get_folder_name(char* cItem_id)
 	item_id_rev = tc_strcat(cTemp,"_");
 	cFolderName = tc_strcat(item_id_rev,timestamp);
 	//printf("\n\n\t\t cFolderName :: %s",cFolderName);
+	//if(timestamp)
+		//MEM_free(timestamp);
 	return cFolderName;
 }
 void write_csv_file(tag_t tRevTag,boolean isExported)
