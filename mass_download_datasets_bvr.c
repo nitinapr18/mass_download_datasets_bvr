@@ -22,7 +22,7 @@
 int bom_sub_child(tag_t * tBomChildren,int iNumberOfchild);
 void export_dataset(tag_t tItem);
 void export_latest_rel_data(tag_t tDocument);
-char* get_folder_name(char* cItem_id,char *cRevId);
+char* get_folder_name(char* cItem_id);
 int create_export_folder(char*);
 void write_csv_file(tag_t,boolean);
 void write_csv_file2(tag_t);
@@ -74,6 +74,7 @@ int ITK_user_main(int argc,char *argv[])
 	char *g= ITK_ask_cli_argument ("-g=");
 	char *cItem_id=ITK_ask_cli_argument("-item_id=");
 	char *cRevRule=ITK_ask_cli_argument("-rev_rule=");
+	//char cRevRule[20]=ITK_ask_cli_argument("-rev_rule=");
 	int iCheckFolderCreation = 0;
 	cFolderPath=ITK_ask_cli_argument("-folder_path=");
 	
@@ -83,8 +84,8 @@ int ITK_user_main(int argc,char *argv[])
 	}
 	else
 	{
-		printf("\t\t\n Please enter correct arguments.. ");
-		printf("\t\t\n e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=Any Status; No Working -folder_path=E:\Files");
+		printf("\n\n\t\t Please enter correct arguments.. ");
+		printf("\n\n\t\t e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=Any Status; No Working -folder_path=E:\Files");
 		return ITK_ok;
 	}
 
@@ -93,22 +94,23 @@ int ITK_user_main(int argc,char *argv[])
 		iFail=ITK_init_module(u,p,g);
 		if (iFail==ITK_ok)
 		{
-			printf("\n\n Login Successful");
-			printf("\n\n Trying to find Item %s",cItem_id);
+			printf("\n\n\t\t Login Successful");
+			printf("\n\n\t\t Trying to find Item %s",cItem_id);
 			iFail=ITEM_find_item(cItem_id,&tItem);
 
 			if((iFail==ITK_ok)&&(tItem!=NULLTAG))
 			{
+				
+				//cFolderPath = tc_strcat(cFolderPath,cName);
 				iCheckFolderCreation = create_export_folder(cFolderPath);
-				if(iCheckFolderCreation)
-				{
-					printf("\t\t\n\n Error : Please enter proper folder path e.g E:\\Files \n");
-					return ITK_ok;
-				}
+				cName = get_folder_name(cItem_id);
+				cFolderPath = tc_strcat(cFolderPath,cName);
+				create_export_folder(cFolderPath);
+				//printf("\t\t\n\n Error : Please enter proper folder path e.g E:\\Files \n");
+				//return ITK_ok;
 				//cName = get_folder_name(cItem_id,cRevId);
 				//cExportLog=strcat(cFolderPath,"\dataset_exported_log.csv");
 				//cNotExportLog=strcat(cFolderPath,"\dataset_not_exported_log.csv");
-				
 				//pFile=fopen(cFilename,"w+");
 				tc_strcpy(cExportLog," ");
 				tc_strcpy(cExportLog, cFolderPath);
@@ -121,12 +123,6 @@ int ITK_user_main(int argc,char *argv[])
 				pFile=fopen(cExportLog,"w+");
 				pFile2=fopen(cNotExportLog,"w+");
 				
-				//pFile=fopen(cExportLog,"w+");
-				//pFile2=fopen(cNotExportLog,"w+");
-				//cFolderName = get_folder_name(cItem_id,cRevId);
-				//cFolderPath = tc_strcat(cFolderPath,cFolderName);
-				
-
 				fprintf(pFile,"\n%s,%s,%s,%s,%s,%s,%s,%s,%s",
 					"Item ID","Rev","Name","Status","Action","Lastest Rev Avaialble","Rev","Status","Action");
 
@@ -137,13 +133,29 @@ int ITK_user_main(int argc,char *argv[])
 				//printf("\n\n\t\t Revision ID = %s \t Name = %s",cRevId,cRevName);
 
 				iFail=BOM_create_window(&tWindow);
-				printf("\n\n Finding Revision Rule %s ",cRevRule);
+				printf("\n\n\t\t Finding Revision Rule %s ",cRevRule);
+				//cRevRule = "Any Status; No Working";
 				//iFail = CFM_find(cRevRule,&tRule);
-				iFail = CFM_find("Any Status; No Working",&tRule);
-				//if(iFail != NULL)
+				if(tc_strcmp(cRevRule,"Any Status; No Working")==0 || tc_strcmp(cRevRule,"Any Status; Working")==0 ||tc_strcmp(cRevRule,"Latest Working")==0)
+				{
+					if(tc_strcmp(cRevRule,"Any Status; No Working")==0)
+						CFM_find("Any Status; No Working",&tRule);
+					if(tc_strcmp(cRevRule,"Any Status; Working")==0)
+						CFM_find("Any Status; Working",&tRule);
+					if(tc_strcmp(cRevRule,"Latest Working")==0)
+						CFM_find("Latest Working",&tRule);
+				}
+				else
+				{
+					
+					printf("\n\n Please Enter correct revision rule Error");
+					return ITK_ok;
+				}
+				//iFail = CFM_find("Any Status; No Working",&tRule);
+				//if(iFail != ITK_ok)
 				//{
 					CHECK_ERROR(BOM_set_window_config_rule( tWindow, tRule )); 
-					printf("\n\n Revision Rule Set ");
+					printf("\n\n\t\t Revision Rule Set ");
 					BOM_save_window(tWindow);
 
 					iFail=BOM_set_window_top_line(tWindow,tItem,NULLTAG,NULLTAG,&tBomLine);
@@ -155,7 +167,7 @@ int ITK_user_main(int argc,char *argv[])
 
 					if(rev_id != ITK_ok)
 					{
-						printf("\n\n Rev_ID is %s",rev_id);
+						printf("\n\n\t\t Rev_ID is %s",rev_id);
 						export_dataset(tTop_Asm);
 
 						printf("\n\n\t\t iNumberOfchild = %d",iNumberOfchild);
@@ -167,9 +179,9 @@ int ITK_user_main(int argc,char *argv[])
 					}
 					else
 					{
-						printf("\n\n item is not released");
+						printf("\n\n\t\t item is not released");
 						EMH_ask_error_text(iFail,&cError);
-						printf("\n\n Error : %s",cError);
+						printf("\n\n\t\t Error : %s",cError);
 					}
 					BOM_close_window(tWindow);
 					fclose(pFile);
@@ -184,13 +196,13 @@ int ITK_user_main(int argc,char *argv[])
 			else
 			{
 				EMH_ask_error_text(iFail,&cError);
-				printf("\n\n Item not found Error : %s",cError);
+				printf("\n\n\t\t Item not found Error : %s",cError);
 			}			
 		}
 		else
 		{
 			EMH_ask_error_text(iFail,&cError);
-			printf("\n\n Error : %s",cError);
+			printf("\n\n\t\t Error : %s",cError);
 		}
 	}
 	else
@@ -282,7 +294,7 @@ void export_dataset(tag_t tItem)
 			}
 			if(tc_strcmp(cObjectType,"H4_Drawing_Type")==0)
 			{
-				printf("\t\n Calling function for export_latest_rel_data H4_Drawing_Type..\n");
+				printf("\n\n\t\t Calling function for export_latest_rel_data H4_Drawing_Type..\n");
 				export_latest_rel_data(tSecObjlist[i]);
 			}
 			if(tc_strcmp(cObjectType,"A2Cdocument")==0)
@@ -292,7 +304,7 @@ void export_dataset(tag_t tItem)
 			if(tc_strcmp(cObjectType,"Text")==0 || tc_strcmp(cObjectType,"PDF")==0)
 			{
 				AE_ask_dataset_named_refs(tSecObjlist[i],&iFoundDataSet,&tRefObjectList);
-				printf("\n\n\t\t iFoundDataSet: %d",iFoundDataSet);
+				printf("\n\n\t\t No of referance object found: %d",iFoundDataSet);
 				for(j=0;j<iFoundDataSet;j++)
 				{
 					iFail = IMF_ask_original_file_name(tRefObjectList[j],cRefObjName);
@@ -302,7 +314,7 @@ void export_dataset(tag_t tItem)
 					tc_strcat(cDestFilePath,"\\");
 					tc_strcat(cDestFilePath,cRefObjName);
 					AOM_refresh(tSecObjlist[i],1);
-					printf("\n\n\t\t cDestFilePath: %s",cDestFilePath);
+					//printf("\n\n\t\t cDestFilePath: %s",cDestFilePath);
 					printf("\n\n\t\t refName: %s",cObjectType);
 
 					if(tc_strcmp(cObjectType,"PDF")==0)
@@ -323,12 +335,19 @@ void export_dataset(tag_t tItem)
 				}
 			}
 		}
-
+		if(tSecObjlist)
+		{
+			MEM_free(tSecObjlist);
+		}
+		if(tRefObjectList)
+		{
+			MEM_free(tRefObjectList);
+		}
 		write_csv_file(tItem,isExported);
 	}
 	else
 	{
-		printf("\t\t\n\n not able to find Item tag");
+		printf("\n\n\t\t not able to find Item tag");
 	}
 
 }
@@ -340,20 +359,20 @@ void export_latest_rel_data(tag_t tItemtag)
 	char* cPropValue = NULL;
 	char *cItemName = NULL;
 	ITEM_list_all_revs(tItemtag,&iCount,&tItemRevList);
-	printf("\t\t\n No of HON Drawing Type Revision found: %d",iCount);
+	printf("\n\n\t\t No of HON Drawing Type Revision found: %d",iCount);
 	for (i = iCount-1; i >= 0; --i)
 	{
-		printf("\t\t\n finding released status..");
+		printf("\n\n\t\t finding released status..");
 
 		CHECK_ERROR(AOM_UIF_ask_value(tItemRevList[i],"release_status_list",&cPropValue));
-		printf("\t\t\n found released status..");
+		printf("\n\n\t\t found released status..");
 
 		if(tc_strcmp(cPropValue,"Released")==0)
 		{
-			printf("\t\t\n No of HON Drawing Type status is released..");
-			printf("\t\t\n\n getting Item Rev ID");
+			printf("\n\n\t\t No of HON Drawing Type status is released..");
+			printf("\n\n\t\t getting Item Rev ID");
 			CHECK_ERROR(ITEM_ask_rev_id2(tItemRevList[i],&cItemName));
-			printf("\t\t\n\n %s Item is Released...",cItemName);
+			printf("\n\n\t\t %s Item is Released...",cItemName);
 			export_dataset(tItemRevList[i]);
 			break;
 		}
@@ -363,23 +382,23 @@ void export_latest_rel_data(tag_t tItemtag)
 int create_export_folder(char* cFolderPath)
 {
 	int check;
-	printf("\n\n Folder Path :: %s",cFolderPath);
+	//printf("\n\n\t\t Folder Path :: %s",cFolderPath);
 	check = mkdir(cFolderPath);
 	//check = mkdir("E:\Prognuer\000081_A");
-	printf("\t\t\n\n Check Val %d",check);
+	//printf("\n\n\t\t Check Val %d",check);
 	if(!check)
-		printf("\n\n Directory created sucessfully!!");
+		printf("\n\n\t\t Directory created sucessfully!!");
 	else
-		printf("\n\n Directory not created sucessfully!!");
+		printf("\n\n\t\t Directory already exist!!");
 	return check;
 }
 
-char* get_folder_name(char* cItem_id,char *cRevId) 
+char* get_folder_name(char* cItem_id) 
 {
 	char* cTemp = NULL;
 	char* item_id_rev = NULL;
 	char* cFolderName = NULL;
-
+	
 	char *timestamp = (char *)MEM_alloc(sizeof(char) * 16);
 	time_t ltime;
 	struct tm *tm;
@@ -388,12 +407,11 @@ char* get_folder_name(char* cItem_id,char *cRevId)
 	sprintf(timestamp,"%02d_%02d_%04d_%02d_%02d_%02d", tm->tm_mday,tm->tm_mon+1, 
 		tm->tm_year+1900, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-	cTemp = tc_strcat(cItem_id,"_");
-	item_id_rev = tc_strcat(cTemp,cRevId);
-	cTemp = tc_strcat(item_id_rev,"_");
-	//cFolderName = tc_strcat(item_id_rev,item_id_rev);
-	//printf(" Time Name :: %s",cFolderName);
-	return cTemp;
+	cTemp = tc_strcat("\\",cItem_id);
+	item_id_rev = tc_strcat(cTemp,"_");
+	cFolderName = tc_strcat(item_id_rev,timestamp);
+	//printf("\n\n\t\t cFolderName :: %s",cFolderName);
+	return cFolderName;
 }
 void write_csv_file(tag_t tRevTag,boolean isExported)
 {
@@ -407,7 +425,7 @@ void write_csv_file(tag_t tRevTag,boolean isExported)
 	tag_t cLatestRevTag = NULLTAG;
 	char* cPropValue=NULL;
 	char* cLatestRevAvailable = false;
-	printf("\n File csv file wrting started for...");
+	printf("\n\n\t\t File csv file wrting started for...");
 
 	ITEM_ask_item_of_rev(tRevTag,&tItem);
 	CHECK_ERROR(ITEM_ask_id2(tItem,&cItem_Id));
@@ -455,7 +473,7 @@ void write_csv_file2(tag_t tBomLine)
 	char* cLatestRevAvailable = false;
 	int iAttribute=0;
 
-	printf("\n File csv file2 wrting started for...");
+	printf("\n\n\t\t File csv file2 wrting started for...");
 
 	CHECK_ERROR(BOM_line_look_up_attribute("bl_item_item_id",&iAttribute));
 	CHECK_ERROR(BOM_line_ask_attribute_string (tBomLine,iAttribute,&cItem_Id));
