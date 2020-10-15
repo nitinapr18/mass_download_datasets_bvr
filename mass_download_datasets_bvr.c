@@ -84,7 +84,7 @@ int ITK_user_main(int argc,char *argv[])
 	else
 	{
 		printf("\n\n\t\t Please enter correct arguments.. ");
-		printf("\n\n\t\t e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=Any Status; No Working -folder_path=E:\Files");
+		printf("\n\n\t\t e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=\"Any Status; No Working\" -folder_path=\"E:\Files\"");
 		return ITK_ok;
 	}
 
