@@ -95,8 +95,8 @@ int ITK_user_main(int argc,char *argv[])
 		{
 			printf("\n\n\t\t Login Successful");
 			printf("\n\n\t\t Trying to find Item %s",cItem_id);
-			iFail=ITEM_find_item(cItem_id,&tItem);
-
+			//iFail=ITEM_find_item(cItem_id,&tItem);
+			iFail=ITEM_find_item_in_idcontext(cItem_id,NULLTAG,&tItem);
 			if((iFail==ITK_ok)&&(tItem!=NULLTAG))
 			{
 
