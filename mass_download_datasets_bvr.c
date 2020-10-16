@@ -51,6 +51,7 @@ int CHECK_ERROR(int a)
 
 int ITK_user_main(int argc,char *argv[]) 
 {
+	
 	int iFail=ITK_ok;
 	int i=0,j=0,k=0;
 	int iRevCount=0;
