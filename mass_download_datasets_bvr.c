@@ -299,6 +299,10 @@ void export_dataset(tag_t tItem,char *cRelation)
 			WSOM_ask_object_type2(tSecObjlist[i],&cObjectType);
 			printf("\n\n\t\t cObjectType: %s",cObjectType);
 
+			if(tc_strcmp(cObjectType,"MISC")==0)
+			{
+  				continue;
+			}
 			if(tc_strcmp(cObjectType,"Document")==0)
 			{
 				export_latest_rel_data(tSecObjlist[i]);
