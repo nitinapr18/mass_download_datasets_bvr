@@ -20,11 +20,26 @@
 #include <direct.h>
 #include <time.h>
 #include<string>
-#include<base_utils\ScopedSmPtr.hxx>
-#include <base_utils/IFail.hxx>
+#include<base_utils\ScopedSmPtr.hxx>   
+#include <base_utils/IFail.hxx>                 // Either have "\" or "/"
 #include <base_utils/TcResultStatus.hxx>
 
 using namespace std;
+// Add using namespace teamcenter here. Avoids writing teamcenter:: everytime.
+
+// The file will be maintained by developers who didn't work on creating this utility. It is our job to make their lives easy by adding correct comments.
+// If the comments are missing they will trouble us later. Its better we make this file readable and understandable for new developers now rather than spending time on it later.
+// Please add comments to each function and at important If conditions.
+// Please write down the logic used in simple words where ever needed.
+
+// Main category of comments
+// 1) Use Smart pointers where ever memory is being allocated by teamcenter ITK's. Don't use mem_free. Not sure when and how the code will crash while freeing the memory.
+      // Allocating and freeing memory should not be applications responsibility. Please take it as a rule of thumb.
+// 2) Use Resultstatus for all Teamcenter ITK calls.
+// 3) Avoid using char[] arrays. Its a very bad habbit and can lead to crashes and unresolvable bus in future.
+// 4) File handling using c++ constructs is easy, simple and clean. Not very clear why we are using fprintf. My recommendation would be to use c++ constructs.
+// 5) Add clear and simple comments to the code exlaing what exactly the code is doing.
+
 
 int bom_sub_child(tag_t * tBomChildren,int iNumberOfchild);
 void export_dataset(tag_t tItem,char*);
@@ -33,8 +48,8 @@ int create_export_folder(string);
 void write_csv_file(tag_t,boolean);
 void write_csv_file2(tag_t);
 
-FILE *pFile=NULL;
-FILE *pFile2=NULL;
+FILE *pFile=NULL; // This should be smart pointer.
+FILE *pFile2=NULL; // This should be smart pointer.
 string  cFolderPath;
 
 int ITK_user_main(int argc,char *argv[]) 
@@ -54,12 +69,12 @@ int ITK_user_main(int argc,char *argv[])
 	int iAttribute =0;
 	tag_t tTop_Asm = NULLTAG;
 	Teamcenter::scoped_smptr<char> rev_id;
-	char cExportLog[100];
-	char cNotExportLog[100];
+	char cExportLog[100];   // Don't user char array
+	char cNotExportLog[100]; // Don't use char array
 	int iCheckFolderCreation = 0;
 	Teamcenter::scoped_smptr<char> cAttribute_value;
 	int inOfItem = 0;
-	tag_t* tItemTagList = NULLTAG;
+	tag_t* tItemTagList = NULLTAG;  // Smart pointer
 	try
 	{
 		string u= ITK_ask_cli_argument ("-u=");
@@ -88,7 +103,7 @@ int ITK_user_main(int argc,char *argv[])
 			{
 				cout<<"\n\n\t\t Login Successful"<<endl;
 				cout<<"\n\n\t\t Trying to find Item "<<cItem_id.c_str()<<endl;
-				iFail=ITEM_find_item_in_idcontext(cItem_id.c_str(),NULLTAG,&tItem);
+				iFail=ITEM_find_item_in_idcontext(cItem_id.c_str(),NULLTAG,&tItem);  //Use Rstatus instead of Ifail for all ITK calls
 				if((iFail==ITK_ok)&&(tItem!=NULLTAG))
 
 				{
@@ -109,7 +124,7 @@ int ITK_user_main(int argc,char *argv[])
 
 					fprintf(pFile2,"\n%s,%s,%s,%s,%s",
 						"Item ID","Rev","Name","Status","Reason");
-					iFail=BOM_create_window(&tWindow);
+					iFail=BOM_create_window(&tWindow);  //Use Rstatus instead of Ifail for all ITK calls
 					cout<<"\n\n\t\t Finding Revision Rule  "<<cRevRule.c_str()<<endl;
 					if(tc_strcmp(cRevRule.c_str(),"Any Status; No Working")==0 || tc_strcmp(cRevRule.c_str(),"Any Status; Working")==0 ||tc_strcmp(cRevRule.c_str(),"Latest Working")==0)
 					{
@@ -131,13 +146,13 @@ int ITK_user_main(int argc,char *argv[])
 					cout<<"\n\n\t\t Revision Rule Set "<<endl;
 					BOM_save_window(tWindow);
 
-					iFail=BOM_set_window_top_line(tWindow,tItem,NULLTAG,NULLTAG,&tBomLine);
-					iFail=BOM_line_ask_all_child_lines(tBomLine,&iNumberOfchild,&tBomChildren);
+					iFail=BOM_set_window_top_line(tWindow,tItem,NULLTAG,NULLTAG,&tBomLine);  //Use Rstatus instead of Ifail for all ITK calls
+					iFail=BOM_line_ask_all_child_lines(tBomLine,&iNumberOfchild,&tBomChildren);  //Use Rstatus instead of Ifail for all ITK calls
 
-					iFail=BOM_line_look_up_attribute("bl_revision",&iAttribute);
-					iFail = BOM_line_ask_attribute_tag(tBomLine,iAttribute,&tTop_Asm);
-					ITEM_ask_rev_id2(tTop_Asm,&rev_id);
-
+					iFail=BOM_line_look_up_attribute("bl_revision",&iAttribute);  //Use Rstatus instead of Ifail for all ITK calls
+					iFail = BOM_line_ask_attribute_tag(tBomLine,iAttribute,&tTop_Asm);  //Use Rstatus instead of Ifail for all ITK calls
+					ITEM_ask_rev_id2(tTop_Asm,&rev_id);   //Use Rstatus instead of Ifail for all ITK calls
+  
 					if(rev_id != ITK_ok)
 					{
 						cout<<"\n\n\t\t Rev_ID is "<<rev_id.get()<<endl;
@@ -156,20 +171,20 @@ int ITK_user_main(int argc,char *argv[])
 						EMH_ask_error_text(iFail,&cError);
 						cout<<"\n\n\t\t Error : "<<cError.get()<<endl;
 					}
-					BOM_close_window(tWindow);
+					BOM_close_window(tWindow);  //Use Rstatus instead of Ifail for all ITK calls
 					fclose(pFile2);
 					fclose(pFile);
 
 				}
 				else
 				{
-					EMH_ask_error_text(iFail,&cError);
+					EMH_ask_error_text(iFail,&cError);  //Use Rstatus instead of Ifail for all ITK calls
 					cout<<"\n\n\t\t Item not found Error : "<<cError.get()<<endl;
 				}			
 			}
 			else
 			{
-				EMH_ask_error_text(iFail,&cError);
+				EMH_ask_error_text(iFail,&cError);  //Use Rstatus instead of Ifail for all ITK calls
 				cout<<"\n\n\t\t Error : "<<cError.get()<<endl;
 			}
 		}
@@ -195,35 +210,35 @@ int bom_sub_child(tag_t * tBomChildren,int iNumberOfchild)
 	tag_t tChild=NULLTAG;
 	tag_t *tSubChilds=NULLTAG;
 	tag_t *tSecObjlist=NULLTAG;
-	char cChildName[WSO_name_size_c+1];
-	char cChildDes[WSO_name_size_c+1];
-	char cChildType[WSO_name_size_c+1];
+	char cChildName[WSO_name_size_c+1];  // Don't user char array
+	char cChildDes[WSO_name_size_c+1];    // Same
+	char cChildType[WSO_name_size_c+1];   // Same
 	Teamcenter::scoped_smptr<char> rev_id;
 
 
 	try{
-		iFail=BOM_line_look_up_attribute("bl_revision",&iAttribute);
+		iFail=BOM_line_look_up_attribute("bl_revision",&iAttribute);   //Use Rstatus instead of Ifail for all ITK calls
 
 		for(j=0;j<iNumberOfchild;j++)
 		{
-			iFail = BOM_line_ask_attribute_tag(tBomChildren[j],iAttribute,&tChild);
-			ITEM_ask_rev_id2(tChild,&rev_id);
+			iFail = BOM_line_ask_attribute_tag(tBomChildren[j],iAttribute,&tChild); //Use Rstatus instead of Ifail for all ITK calls
+			ITEM_ask_rev_id2(tChild,&rev_id); //Use Rstatus instead of Ifail for all ITK calls
 			if(rev_id != ITK_ok)
 			{
-				WSOM_ask_name(tChild,cChildName);
-				WSOM_ask_description(tChild,cChildDes);
-				WSOM_ask_object_type(tChild,cChildType); 			
+				WSOM_ask_name(tChild,cChildName); //Use Rstatus instead of Ifail for all ITK calls
+				WSOM_ask_description(tChild,cChildDes); //Use Rstatus instead of Ifail for all ITK calls
+				WSOM_ask_object_type(tChild,cChildType); 		 //Use Rstatus instead of Ifail for all ITK calls	
 				cout<<"\n\n\t\t child name:"<<cChildName<<endl;
 				cout<<"\n\n\t\t  rev  ID  : "<<rev_id.get()<<endl;
-				BOM_line_ask_all_child_lines(tBomChildren[j],&iNumberOfSubChild,&tSubChilds);
+				BOM_line_ask_all_child_lines(tBomChildren[j],&iNumberOfSubChild,&tSubChilds);  //Use Rstatus instead of Ifail for all ITK calls
 				export_dataset(tChild,"IMAN_reference");
 				if(iNumberOfSubChild>0)
 				{	
-					bom_sub_child(tSubChilds,iNumberOfSubChild);
+					bom_sub_child(tSubChilds,iNumberOfSubChild);  //Use Rstatus instead of Ifail for all ITK calls
 				}
 				if(tSubChilds)
 				{
-					MEM_free(tSubChilds);
+					MEM_free(tSubChilds); // Use smart pointers. You don't have to free any memory
 				}
 				if(tSecObjlist)
 				{
@@ -250,7 +265,7 @@ int bom_sub_child(tag_t * tBomChildren,int iNumberOfchild)
 void export_dataset(tag_t tItem,char *cRelation)
 {
 	int iCount=0,i=0,j=0,k=0,iFoundDataSet=0,ref_count=0;
-	tag_t *tSecObjlist=NULLTAG,*tRefObjectList=NULLTAG;
+	tag_t *tSecObjlist=NULLTAG,*tRefObjectList=NULLTAG;    // Smart pointer should be used
 	tag_t iFail;
 	tag_t tDatasetType = NULLTAG;
 	tag_t tRelationTag=NULLTAG;
@@ -258,7 +273,7 @@ void export_dataset(tag_t tItem,char *cRelation)
 	Teamcenter::scoped_smptr<char> cObjectType; 
 	Teamcenter::scoped_smptr<char> cError;
 	char  cRefObjName[IMF_filename_size_c + 1];
-	char cDestFilePath[100];
+	char cDestFilePath[100];  //No char array
 	boolean isExported = false;
 
 	try{
