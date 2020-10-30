@@ -1,3 +1,19 @@
+/******************************************************************************************************************************
+  @Requirment ::
+ * Export all dataset Named reference file from  latest released revision , Document attached different relation type 
+   i.e. Iman references and H4_Source_File .
+ * There is two item type is used in the one Is H4_Hon_Part_Type and H4_Hon_Drowing _type
+ * H4_Hon_Part_Type  is  Item type and H4_Hon_Drowing _type is Document type.
+ * H4_Hon_Drowing _type is attached to H4_Hon_Part_Type  by  IMAN_referenace relation .
+ * H4_Hon_Part_Type  and H4_Hon_Drowing _type  Revision has  attached different types of datasets , 
+   Export data only from the latest released revision Named Reference file,  
+   whose attached by relation IMAN reference and H4_Source_File  and except .mi file (ex. Miscellaneous file type should not export).
+
+ * Use Case  : 
+	There was  Custom Item type and  Document type that is H4_Hon_Part_Type and  H4_Hon_Drowing _type respectively 
+
+ *******************************************************************************************************************************/
+
 #include<iostream>
 #include<conio.h>
 #include<stdio.h>
@@ -27,21 +43,6 @@
 
 using namespace std;
 using namespace Teamcenter;
-// Add using namespace teamcenter here. Avoids writing teamcenter:: everytime.
-
-// The file will be maintained by developers who didn't work on creating this utility. It is our job to make their lives easy by adding correct comments.
-// If the comments are missing they will trouble us later. Its better we make this file readable and understandable for new developers now rather than spending time on it later.
-// Please add comments to each function and at important If conditions.
-// Please write down the logic used in simple words where ever needed.
-
-// Main category of comments
-// 1) Use Smart pointers where ever memory is being allocated by teamcenter ITK's. Don't use mem_free. Not sure when and how the code will crash while freeing the memory.
-// Allocating and freeing memory should not be applications responsibility. Please take it as a rule of thumb.
-// 2) Use Resultstatus for all Teamcenter ITK calls.
-// 3) Avoid using char[] arrays. Its a very bad habbit and can lead to crashes and unresolvable bus in future.
-// 4) File handling using c++ constructs is easy, simple and clean. Not very clear why we are using fprintf. My recommendation would be to use c++ constructs.
-// 5) Add clear and simple comments to the code exlaing what exactly the code is doing.
-
 
 int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild);
 void export_dataset(tag_t tItem,string);
@@ -408,9 +409,7 @@ void export_latest_rel_data(tag_t tItemtag)
 		rStatus = ITEM_list_all_revs(tItemtag,&iCount,&tItemRevList);
 		cout<<" No of HON Drawing Type Revision found: "<<iCount<<endl;
 		for (i = iCount-1; i >= 0; --i)
-		{
-			//cout<<" finding released status.."<<endl;
-
+		{			
 			rStatus=AOM_UIF_ask_value(tItemRevList[i],"release_status_list",&cPropValue);
 
 			if(tc_strcmp(cPropValue.get(),"Released")==0)
@@ -564,3 +563,4 @@ void write_csv_file2(tag_t tBomLine)
 	}
 
 }
+
