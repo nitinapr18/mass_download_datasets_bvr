@@ -50,13 +50,26 @@ int create_export_folder(string);
 void write_csv_file(tag_t,boolean);
 void write_csv_file2(tag_t);
 
-ofstream pFile;
-ofstream pFile2;
+fstream pFile;
+fstream pFile2;
 string  cFolderPath;
+
+/**
+    * This function will 
+	* 1. Get the command line argument
+	  2. Log in to Teamcenter
+	  3. Check the item id exist or not
+	  4. Create BOM window and set Revsion rule
+	  5. Set Top Bomline
+	  6. Iterate all bom child line
+
+    @param command line argument Item Id,User,Password,Group,Revsion Rule,Folder Path.
+    @return int
+*/
 
 int ITK_user_main(int argc,char *argv[]) 
 {
-	ResultStatus rStatus = ITK_ok;
+	ResultStatus rStatus;
 	int iFail=ITK_ok;
 	int i=0,j=0,k=0;
 	int iRevCount=0;
@@ -70,8 +83,8 @@ int ITK_user_main(int argc,char *argv[])
 	int iAttribute =0;
 	tag_t tTop_Asm = NULLTAG;
 	scoped_smptr<char> rev_id;
-	char cExportLog[100];   // Don't user char array
-	char cNotExportLog[100]; // Don't use char array
+	char cExportLog[500];   
+	char cNotExportLog[500]; 
 	int iCheckFolderCreation = 0;
 	scoped_smptr<char> cAttribute_value;
 	int inOfItem = 0;
@@ -87,37 +100,33 @@ int ITK_user_main(int argc,char *argv[])
 		string cFilePath=ITK_ask_cli_argument("-folder_path=");
 		cFolderPath=cFilePath;
 
-		if(argc==7)
+		if(argc!=7)
 		{
-
-		}
-		else
-		{
-			cout<<"\n\n\t\t Please enter correct arguments.."<<endl;
-			cout<<"\n\n\t\t e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=\"Any Status; No Working\" -folder_path=\"E:\Files\""<<endl;
+			cout<<" Please enter correct arguments.."<<endl;
+			cout<<" e.g mass_download_datasets_bvr.exe -u=infodba -p=infodba -g=dba -item_id=001 -rev_rule=\"Any Status; No Working\" -folder_path=\"E:\Files\""<<endl;
 			return ITK_ok;
 		}
-
+		
 		if(!cItem_id.empty())
 		{
 			rStatus=ITK_init_module(u.c_str(),p.c_str(),g.c_str());			
-			cout<<"\n\n\t\t Login Successful"<<endl;
-			cout<<"\n\n\t\t Trying to find Item "<<cItem_id.c_str()<<endl;
+			cout<<" Login Successful"<<endl;
+			cout<<" Trying to find Item "<<cItem_id.c_str()<<endl;
 			int iNumOfItem = 0;
 			scoped_smptr<tag_t> tItemTagList;
 			string sAttValue;
 			scoped_smptr<char> objType;
 			sAttValue = "item_id="+cItem_id;
-			ITEM_find_items_by_string(sAttValue.c_str(),&iNumOfItem,&tItemTagList);
+			rStatus=ITEM_find_items_by_string(sAttValue.c_str(),&iNumOfItem,&tItemTagList);
 			for (int i = 0; i < iNumOfItem; i++)
 			{
 				WSOM_ask_object_type2(tItemTagList[i],&objType);
-				cout<<"\n\n\t\t Object Type is ::" << objType.get() <<endl;
+				cout<<" Object Type is ::" << objType.get() <<endl;
 				if(tc_strcmp(objType.get(),"H4_Hon_Part_Type")==0)
 				//if(tc_strcmp(objType.get(),"A2H4_Hon_Part")==0)
 				{
 					tItem = tItemTagList[i];
-					cout<<"\n\n\t\t H4_Hon_Part_Type Object Type found"<<endl;
+					cout<<" H4_Hon_Part_Type Object Type found"<<endl;
 					break;
 				}
 			}
@@ -132,14 +141,15 @@ int ITK_user_main(int argc,char *argv[])
 				tc_strcpy(cNotExportLog, cFolderPath.c_str());
 				tc_strcat(cNotExportLog,"\\dataset_not_exported_log.csv");
 
-				pFile.open(cExportLog);
-				pFile2.open(cNotExportLog);
-				pFile<<"Item ID","Rev","Name","Status","Action","Lastest Rev Avaialble","Rev","Status","Action\n";
+				pFile.open(cExportLog,ios::out);
+				pFile2.open(cNotExportLog,ios::out);
 
-				pFile<<"Item ID","Rev","Name","Status","Reason\n";
+				pFile<<"Item ID","Rev","Name","Status","Action","Lastest Rev Avaialble","Rev","Status","Action";
 
-				rStatus=BOM_create_window(&tWindow);  //Use Rstatus instead of Ifail for all ITK calls
-				cout<<"\n\n\t\t Finding Revision Rule  "<<cRevRule.c_str()<<endl;
+				pFile<<"Item ID","Rev","Name","Status","Reason";
+
+				rStatus=BOM_create_window(&tWindow); 
+				cout<<" Finding Revision Rule  "<<cRevRule.c_str()<<endl;
 				if(tc_strcmp(cRevRule.c_str(),"Any Status; No Working")==0 || tc_strcmp(cRevRule.c_str(),"Any Status; Working")==0 ||tc_strcmp(cRevRule.c_str(),"Latest Working")==0)
 				{
 					if(tc_strcmp(cRevRule.c_str(),"Any Status; No Working")==0)
@@ -152,27 +162,28 @@ int ITK_user_main(int argc,char *argv[])
 				else
 				{
 
-					cout<<"\n\n Please Enter correct revision rule Error"<<endl;
+					cout<<" Please Enter correct revision rule Error"<<endl;
 					return ITK_ok;
 				}
 
 				rStatus= BOM_set_window_config_rule( tWindow, tRule ); 
-				cout<<"\n\n\t\t Revision Rule Set "<<endl;
+				cout<<" Revision Rule Set "<<endl;
 				rStatus = BOM_save_window(tWindow);
 
-				rStatus=BOM_set_window_top_line(tWindow,tItem,NULLTAG,NULLTAG,&tBomLine);  //Use Rstatus instead of Ifail for all ITK calls
-				rStatus=BOM_line_ask_all_child_lines(tBomLine,&iNumberOfchild,&tBomChildren);  //Use Rstatus instead of Ifail for all ITK calls
-
-				rStatus=BOM_line_look_up_attribute("bl_revision",&iAttribute);  //Use Rstatus instead of Ifail for all ITK calls
-				rStatus = BOM_line_ask_attribute_tag(tBomLine,iAttribute,&tTop_Asm);  //Use Rstatus instead of Ifail for all ITK calls
-				rStatus = ITEM_ask_rev_id2(tTop_Asm,&rev_id);   //Use Rstatus instead of Ifail for all ITK calls
+				rStatus=BOM_set_window_top_line(tWindow,tItem,NULLTAG,NULLTAG,&tBomLine);  
+				rStatus=BOM_line_ask_all_child_lines(tBomLine,&iNumberOfchild,&tBomChildren);  
+				cout<<" Number of child to is : "<<iNumberOfchild<<endl;
+				
+				rStatus=BOM_line_look_up_attribute("bl_revision",&iAttribute);  
+				rStatus = BOM_line_ask_attribute_tag(tBomLine,iAttribute,&tTop_Asm);
+				rStatus = ITEM_ask_rev_id2(tTop_Asm,&rev_id);   
 
 				if(rev_id != ITK_ok)
 				{
-					cout<<"\n\n\t\t Rev_ID is "<<rev_id.get()<<endl;
+					cout<<" Exporting dataset of Top BomLine "<<rev_id.get()<<endl;
 					export_dataset(tTop_Asm,"H4_Source_File");
 					export_dataset(tTop_Asm,"IMAN_reference");
-					cout<<"\n\n\t\t iNumberOfchild = "<<iNumberOfchild<<endl;
+					
 					if(iNumberOfchild>0)
 					{
 						rStatus=bom_sub_child(tBomChildren.get(),iNumberOfchild);
@@ -181,21 +192,21 @@ int ITK_user_main(int argc,char *argv[])
 				}
 				else
 				{
-					cout<<"\n\n\t\t item is not released"<<endl;
+					cout<<" item is not released"<<endl;
 				}
-				rStatus = BOM_close_window(tWindow);  //Use Rstatus instead of Ifail for all ITK calls
+				rStatus = BOM_close_window(tWindow);
 				pFile2.close();
 				pFile.close();
 			}
 			else
 			{
-				cout<<"\n\n\t\t Item not found Error : "<<endl;
+				cout<<" Item not found Error : "<<endl;
 			}			
 
 		}
 		else
 		{
-			cout<<"\n\n\t\t Enter -item_id= ?"<<endl;
+			cout<<" Enter -item_id= ?"<<endl;
 			exit(0);
 		}
 	}
@@ -206,6 +217,15 @@ int ITK_user_main(int argc,char *argv[])
 	return ITK_ok;
 }
 
+/**
+    * Recursive function to Iterate all bom child line
+	*
+	* This function will iterate all child line of bom recursively. 
+	* Also call export_dataset function to export dataset
+	*
+    @param tag_t BomLine, int number Of child .
+    @return int.
+*/
 int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild)
 {
 	ResultStatus rStatus;
@@ -216,37 +236,36 @@ int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild)
 	tag_t tChild=NULLTAG;
 	scoped_smptr<tag_t> tSubChilds;
 	scoped_smptr<tag_t> tSecObjlist;
-	char cChildName[WSO_name_size_c+1];  // Don't user char array
-	char cChildDes[WSO_name_size_c+1];    // Same
-	char cChildType[WSO_name_size_c+1];   // Same
+	char cChildName[WSO_name_size_c+1];  
+	char cChildDes[WSO_name_size_c+1];   
+	char cChildType[WSO_name_size_c+1];  
 	scoped_smptr<char> rev_id;
 
 	try{
-		rStatus=BOM_line_look_up_attribute("bl_revision",&iAttribute);   //Use Rstatus instead of Ifail for all ITK calls
+		rStatus=BOM_line_look_up_attribute("bl_revision",&iAttribute);
 
 		for(j=0;j<iNumberOfchild;j++)
 		{
-			rStatus = BOM_line_ask_attribute_tag(tBomChildren[j],iAttribute,&tChild); //Use Rstatus instead of Ifail for all ITK calls
-			rStatus = ITEM_ask_rev_id2(tChild,&rev_id); //Use Rstatus instead of Ifail for all ITK calls
+			rStatus = BOM_line_ask_attribute_tag(tBomChildren[j],iAttribute,&tChild); 
+			rStatus = ITEM_ask_rev_id2(tChild,&rev_id); 
 			if(rev_id != ITK_ok)
 			{
-				rStatus = WSOM_ask_name(tChild,cChildName); //Use Rstatus instead of Ifail for all ITK calls
-				rStatus = WSOM_ask_description(tChild,cChildDes); //Use Rstatus instead of Ifail for all ITK calls
-				rStatus = WSOM_ask_object_type(tChild,cChildType); 		 //Use Rstatus instead of Ifail for all ITK calls	
-				cout<<"\n\n\t\t child name:"<<cChildName<<endl;
-				cout<<"\n\n\t\t  rev  ID  : "<<rev_id.get()<<endl;
+				rStatus = WSOM_ask_name(tChild,cChildName); 
+				rStatus = WSOM_ask_description(tChild,cChildDes);
+				rStatus = WSOM_ask_object_type(tChild,cChildType);
 				rStatus = BOM_line_ask_all_child_lines(tBomChildren[j],&iNumberOfSubChild,&tSubChilds);  
+				cout<<" Exporting dataset of BomLine "<<cChildName <<" "<< rev_id.get()<<endl;
 				export_dataset(tChild,"H4_Source_File");
 				export_dataset(tChild,"IMAN_reference");
 				if(iNumberOfSubChild>0)
 				{	
-					rStatus=bom_sub_child(tSubChilds.get(),iNumberOfSubChild);  //Use Rstatus instead of Ifail for all ITK calls
+					rStatus=bom_sub_child(tSubChilds.get(),iNumberOfSubChild); 
 				}
 
 			}
 			else
 			{
-				write_csv_file2(tBomChildren[j]);
+				//write_csv_file2(tBomChildren[j]);
 			}
 
 		}
@@ -256,10 +275,19 @@ int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild)
 		cout<<"\n uncepted exception captured "<<ex.getMessage()<< "please report errors.\n"<<endl;
 	}
 
-
 	return ITK_ok;
 }
 
+/**
+    * Export the dataset named reference attached with specific relation.
+	*
+	* This function export all namereference attached with dataset with specific relation .
+	* We are exporting all dataset attached with Item Revsion with H4_source_File and Iman_Reference Relation and
+	* Also we are exporting all dataset attached with Drawing with H4_source_File.
+	
+    @param tag_t Item, string Relation.
+    @return void.
+*/
 void export_dataset(tag_t tItem,string cRelation)
 {
 	int iCount=0,i=0,j=0,k=0,iFoundDataSet=0,ref_count=0;
@@ -273,94 +301,79 @@ void export_dataset(tag_t tItem,string cRelation)
 	scoped_smptr<char> cObjectType; 
 	scoped_smptr<char> cError;
 	char  cRefObjName[IMF_filename_size_c + 1];
-	char cDestFilePath[100];  
+	char cDestFilePath[500];  
 	boolean isExported = false;
 
 	try{
 		if(tItem!= NULLTAG)
 		{
-
 			if(tc_strcmp(cRelation.c_str(),"H4_Source_File")==0)
-				iFail=GRM_find_relation_type("H4_Source_File",&tRelationTag);
+				rStatus=GRM_find_relation_type("H4_Source_File",&tRelationTag);
 			if(tc_strcmp(cRelation.c_str(),"IMAN_reference")==0)
-				iFail=GRM_find_relation_type("IMAN_reference",&tRelationTag);
+				rStatus=GRM_find_relation_type("IMAN_reference",&tRelationTag);
 
 			rStatus=GRM_list_secondary_objects_only(tItem,tRelationTag,&iCount,&tSecObjlist);
-			cout<<"\n\n\t\t secondary objects count:"<< iCount <<endl;
+			
+			cout<<" ====================Exporting dataset start============================"<<endl;
+			cout<<" secondary objects count:"<< iCount <<endl;
 			for(i=0;i<iCount;i++)
 			{
-				rStatus=WSOM_ask_object_type2(tSecObjlist[i],&cObjectType);
-
-				cout<<"\n\n\t\t cObjectType: "<<cObjectType.get()<<endl;
+				rStatus=WSOM_ask_object_type2(tSecObjlist[i],&cObjectType);	
+				cout<<" ObjectType: "<<cObjectType.get()<<endl;
 
 				if(tc_strcmp(cObjectType.get(),"MISC")==0)
 				{
 					continue;
 				}
-				if(tc_strcmp(cObjectType.get(),"Document")==0)
-				{
-					export_latest_rel_data(tSecObjlist[i]);
-				}
+
 				if(tc_strcmp(cObjectType.get(),"H4_Drawing_Type")==0)
 				{
-					cout<<"\n\n\t\t Calling function for export_latest_rel_data H4_Drawing_Type..\n"<<endl;
+					cout<<"Calling function for export_latest_rel_data H4_Drawing_Type.."<<endl;
 					export_latest_rel_data(tSecObjlist[i]);
 				}
-				if(tc_strcmp(cObjectType.get(),"A2Cdocument")==0)
-				{
-					export_latest_rel_data(tSecObjlist[i]);
-				}
-
-
-				AE_ask_dataset_named_refs(tSecObjlist[i],&iFoundDataSet,&tRefObjectList);
-				cout<<"\n\n\t\t No of referance object found: "<<iFoundDataSet<<endl;
+				
+				iFail=AE_ask_dataset_named_refs(tSecObjlist[i],&iFoundDataSet,&tRefObjectList);
 				for(j=0;j<iFoundDataSet;j++)
 				{
 					rStatus = IMF_ask_original_file_name(tRefObjectList[j],cRefObjName);
-					cout<<"\n\n\t\t cRefObjName: "<<cRefObjName<<endl;
+					cout<<" RefObjName: "<<cRefObjName<<endl;
 					tc_strcpy(cDestFilePath," ");
 					tc_strcpy(cDestFilePath, cFolderPath.c_str());
 					tc_strcat(cDestFilePath,"\\");
 					tc_strcat(cDestFilePath,cRefObjName);
-					AOM_refresh(tSecObjlist[i],1);
-					cout<<"\n\n\t\t refName: "<<cObjectType.get()<<endl;
-					cout<<"\n\n\t\t cDestFilePath::"<<cDestFilePath<<endl;
+					cout<<" refName: "<<cObjectType.get()<<endl;
 					rStatus=AE_ask_dataset_datasettype(tSecObjlist[i],&tDatasetType);
-					iFail = AE_ask_datasettype_refs (tDatasetType, &ref_count, &ref_list);
-					cout<<"\n\n\t\t No Dataset ref object is %d"<<ref_count<<endl;
-					if( iFail == ITK_ok )
+					
+					if( tDatasetType != NULLTAG )
 					{
+						rStatus = AE_ask_datasettype_refs (tDatasetType, &ref_count, &ref_list);
+
 						for (k = 0; k < ref_count; k++)
-						{
-							cout<<"\n\n\t\t named reference  is /n"<< k + 1<< ref_list[k]<<endl;
+						{ 
 							iFail=AE_export_named_ref(tSecObjlist[i],ref_list[k],cDestFilePath);
 						}
 					}
-					else
-					{
-						cout<<"\n\n\t\t Error  asking for datasettype references./n"<< iFail<<endl;
-					}
-
+					
 					if(iFail==ITK_ok)
 					{
 						isExported =true;
-						cout<<"\n\n\t\t Data Exported succesffuly!!"<<endl;
+						cout<<" Data Exported succesffuly!!"<<endl;
 
 					}
 					else
 					{
 						EMH_ask_error_text(iFail,&cError);
-						cout<<"\n\n\t\t Error ::!!"<<cError.get()<<endl;
+						cout<<" Error ::!!"<<cError.get()<<endl;
 					}
 				}
 
 			}
-
+			cout<<" ====================Exporting dataset End============================"<<endl;
 			//write_csv_file(tItem,isExported);
 		}
 		else
 		{
-			cout<<"\n\n\t\t not able to find Item tag"<<endl;
+			cout<<" not able to find Item tag"<<endl;
 		}
 
 	}
@@ -372,6 +385,17 @@ void export_dataset(tag_t tItem,string cRelation)
 
 }
 
+/**
+    * Get the latest release item rev tag from the Item.
+	*
+	* This function will iterate through all Item revsions of Item.
+	* Check the property(release_status_list) of each Item revison.
+	* If item revision has Released status then it send that item revsion send to export_dataset Function.
+	* export_dataset function export data at given path. 
+	
+    @param tag_t Item.
+    @return void.
+*/
 void export_latest_rel_data(tag_t tItemtag)
 {
 	ResultStatus rStatus;
@@ -382,19 +406,19 @@ void export_latest_rel_data(tag_t tItemtag)
 	try
 	{
 		rStatus = ITEM_list_all_revs(tItemtag,&iCount,&tItemRevList);
-		cout<<"\n\n\t\t No of HON Drawing Type Revision found: "<<iCount<<endl;
+		cout<<" No of HON Drawing Type Revision found: "<<iCount<<endl;
 		for (i = iCount-1; i >= 0; --i)
 		{
-			cout<<"\n\n\t\t finding released status.."<<endl;
+			//cout<<" finding released status.."<<endl;
 
 			rStatus=AOM_UIF_ask_value(tItemRevList[i],"release_status_list",&cPropValue);
 
 			if(tc_strcmp(cPropValue.get(),"Released")==0)
 			{
-				cout<<"\n\n\t\t No of HON Drawing Type status is released.."<<endl;
-				cout<<"\n\n\t\t getting Item Rev ID"<<endl;
+				cout<<" No of HON Drawing Type status is released.."<<endl;
+				cout<<" getting Item Rev ID"<<endl;
 				rStatus=ITEM_ask_rev_id2(tItemRevList[i],&cItemName);
-				cout<<"\n\n\t\t  Item is Released..."<<cItemName.get()<<endl;
+				cout<<"  Item is Released..."<<cItemName.get()<<endl;
 				export_dataset(tItemRevList[i],"H4_Source_File");
 				break;
 			}
@@ -406,16 +430,24 @@ void export_latest_rel_data(tag_t tItemtag)
 	}
 }
 
-
+/**
+    * Create a folder where dataset is going to export.
+	*
+	* This function will create folder at given folder path
+	* folder path will be input from user. 
+	
+    @param string folder path.
+    @return int.
+*/
 int create_export_folder(string cFolder_Path)
 {
 	int check;
 	try{
 		check = _mkdir(cFolder_Path.c_str());
 		if(!check)
-			cout<<"\n\n\t\t Directory created sucessfully!!"<<endl;
+			cout<<" Directory created sucessfully!!"<<endl;
 		else
-			cout<<"\n\n\t\t Directory already exist!!"<<endl;
+			cout<<" Directory already exist!!"<<endl;
 	}
 	catch(const IFail &ex)
 	{
@@ -424,6 +456,15 @@ int create_export_folder(string cFolder_Path)
 	return check;
 }
 
+/**
+    * Write .CSV file which will contain exported Item data.
+	*
+	* Get the property from item tag and write in csv file.
+	* This file contain data of exported Item 
+	
+    @param Item Rev tag.
+    @return void.
+*/
 void write_csv_file(tag_t tRevTag,boolean isExported)
 {
 	ResultStatus rStatus;
@@ -435,13 +476,9 @@ void write_csv_file(tag_t tRevTag,boolean isExported)
 	scoped_smptr<char> cAction;
 	scoped_smptr<char> cLatestRev;
 	scoped_smptr<char> cPropValue;
-
-	cout<<"\n\n\t\t File csv file wrting started for..."<<endl;
-
+	cout<<" File csv file wrting started for..."<<endl;
 	try
-	{
-		cout<<"writing started in csv file"<<endl;
-		
+	{	
 		rStatus = ITEM_ask_item_of_rev(tRevTag,&tItem);
 
 		rStatus = ITEM_ask_id2(tItem,&cItem_Id);
@@ -455,25 +492,27 @@ void write_csv_file(tag_t tRevTag,boolean isExported)
 		rStatus = ITEM_ask_latest_rev(tItem,&cLatestRevTag);
 
 		rStatus = ITEM_ask_rev_id2(cLatestRevTag,&cLatestRev);
-		cout<<"Writing finshed"<<endl;
+	
 		if(isExported)
 		{
 			cAction = "Exported";
-			cout<<"Writing finshed"<<endl;
 		}
 		else
 		{
 			cAction = "Not Exported";
-			cout<<"Writing finshed"<<endl;
 		}
-		//if (tc_strcmp(cItem_Rev,cLatestRev.get())==0)
+		if (tc_strcmp(cItem_Rev.get(),cLatestRev.get())==0)
 		{
 
+			/*fprintf(pFile,"\n%s,%s,%s,%s,%s,%s,%s,%s,%s",
+			cItem_Id,cItem_Rev,cItem_Name,cPropValue,cAction,"NA","NA","NA","NA");*/
+			pFile << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),cPropValue.get(),cAction.get(),"NA","NA","NA","NA";
+		}
+		else
+		{
 			/*fprintf(pFile.get(),"\n%s,%s,%s,%s,%s,%s,%s,%s,%s",
-			cItem_Id,cItem_Rev,cItem_Name,cPropValue,cAction,"Y",cLatestRev,"Working","Skipped");*/
-			cout<<"Writing finshed112"<<endl;
-			pFile << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),cPropValue.get(),cAction.get(),"Y",cLatestRev.get(),"Working","Skipped";
-			cout<<"Writing finshed11"<<endl;
+				cItem_Id,cItem_Rev,cItem_Name,cPropValue,cAction,"Y",cLatestRev,"Working","Skipped");*/
+				pFile << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),cPropValue.get(),cAction.get(),"Y",cLatestRev.get(),"Working","Skipped";
 		}
 	}
 	catch(const IFail &ex)
@@ -483,6 +522,16 @@ void write_csv_file(tag_t tRevTag,boolean isExported)
 
 }
 
+/**
+    * Write .CSV file contain bomline which does not exported.
+	*
+	* Get the property from bomline tag using BOM_line_look_up_attribute 
+	* and write in csv file.This file contain data which is not loaded 
+	* by revsion rule(e.g ? will be there in structure manager) 
+	
+    @param bomline tag.
+    @return void.
+*/
 void write_csv_file2(tag_t tBomLine)
 {
 
@@ -493,7 +542,7 @@ void write_csv_file2(tag_t tBomLine)
 
 	int iAttribute=0;
 
-	cout<<"\n\n\t\t File csv file2 wrting started for..."<<endl;
+	cout<<" File csv file2 wrting started for..."<<endl;
 
 	try
 	{
@@ -515,5 +564,3 @@ void write_csv_file2(tag_t tBomLine)
 	}
 
 }
-
-
