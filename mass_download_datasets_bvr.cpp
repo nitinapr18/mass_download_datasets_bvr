@@ -13,7 +13,6 @@
 	There was  Custom Item type and  Document type that is H4_Hon_Part_Type and  H4_Hon_Drowing _type respectively 
 
  *******************************************************************************************************************************/
-
 #include<iostream>
 #include<conio.h>
 #include<stdio.h>
@@ -33,7 +32,6 @@
 #include<tccore\aom_prop.h>
 #include<sa\imanfile.h>
 #include <direct.h>
-#include <time.h>
 #include<string>
 #include<base_utils\ScopedSmPtr.hxx>   
 #include <base_utils\IFail.hxx> 
@@ -48,11 +46,6 @@ int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild);
 void export_dataset(tag_t tItem,string);
 void export_latest_rel_data(tag_t tDocument);
 int create_export_folder(string);
-void write_csv_file(tag_t,boolean);
-void write_csv_file2(tag_t);
-
-fstream pFile;
-fstream pFile2;
 string  cFolderPath;
 
 /**
@@ -84,8 +77,6 @@ int ITK_user_main(int argc,char *argv[])
 	int iAttribute =0;
 	tag_t tTop_Asm = NULLTAG;
 	scoped_smptr<char> rev_id;
-	char cExportLog[500];   
-	char cNotExportLog[500]; 
 	int iCheckFolderCreation = 0;
 	scoped_smptr<char> cAttribute_value;
 	int inOfItem = 0;
@@ -134,21 +125,6 @@ int ITK_user_main(int argc,char *argv[])
 			if(tItem!=NULLTAG)
 			{
 				iCheckFolderCreation = create_export_folder(cFolderPath.c_str());
-				tc_strcpy(cExportLog," ");
-				tc_strcpy(cExportLog, cFolderPath.c_str());
-				tc_strcat(cExportLog,"\\dataset_exported_log.csv");
-
-				tc_strcpy(cNotExportLog," ");
-				tc_strcpy(cNotExportLog, cFolderPath.c_str());
-				tc_strcat(cNotExportLog,"\\dataset_not_exported_log.csv");
-
-				pFile.open(cExportLog,ios::out);
-				pFile2.open(cNotExportLog,ios::out);
-
-				pFile<<"Item ID","Rev","Name","Status","Action","Lastest Rev Avaialble","Rev","Status","Action";
-
-				pFile<<"Item ID","Rev","Name","Status","Reason";
-
 				rStatus=BOM_create_window(&tWindow); 
 				cout<<" Finding Revision Rule  "<<cRevRule.c_str()<<endl;
 				if(tc_strcmp(cRevRule.c_str(),"Any Status; No Working")==0 || tc_strcmp(cRevRule.c_str(),"Any Status; Working")==0 ||tc_strcmp(cRevRule.c_str(),"Latest Working")==0)
@@ -196,8 +172,6 @@ int ITK_user_main(int argc,char *argv[])
 					cout<<" item is not released"<<endl;
 				}
 				rStatus = BOM_close_window(tWindow);
-				pFile2.close();
-				pFile.close();
 			}
 			else
 			{
@@ -263,10 +237,6 @@ int bom_sub_child(tag_t* tBomChildren,int iNumberOfchild)
 					rStatus=bom_sub_child(tSubChilds.get(),iNumberOfSubChild); 
 				}
 
-			}
-			else
-			{
-				//write_csv_file2(tBomChildren[j]);
 			}
 
 		}
@@ -370,7 +340,6 @@ void export_dataset(tag_t tItem,string cRelation)
 
 			}
 			cout<<" ====================Exporting dataset End============================"<<endl;
-			//write_csv_file(tItem,isExported);
 		}
 		else
 		{
@@ -454,113 +423,3 @@ int create_export_folder(string cFolder_Path)
 	}
 	return check;
 }
-
-/**
-    * Write .CSV file which will contain exported Item data.
-	*
-	* Get the property from item tag and write in csv file.
-	* This file contain data of exported Item 
-	
-    @param Item Rev tag.
-    @return void.
-*/
-void write_csv_file(tag_t tRevTag,boolean isExported)
-{
-	ResultStatus rStatus;
-	tag_t tItem;
-	tag_t cLatestRevTag = NULLTAG;
-	scoped_smptr<char>  cItem_Id;
-	scoped_smptr<char> cItem_Rev;
-	scoped_smptr<char> cItem_Name;
-	scoped_smptr<char> cAction;
-	scoped_smptr<char> cLatestRev;
-	scoped_smptr<char> cPropValue;
-	cout<<" File csv file wrting started for..."<<endl;
-	try
-	{	
-		rStatus = ITEM_ask_item_of_rev(tRevTag,&tItem);
-
-		rStatus = ITEM_ask_id2(tItem,&cItem_Id);
-
-		rStatus = ITEM_ask_rev_id2(tRevTag,&cItem_Rev);
-
-		rStatus=ITEM_ask_name2(tItem,&cItem_Name);
-
-		rStatus = AOM_UIF_ask_value(tRevTag,"release_status_list",&cPropValue);
-
-		rStatus = ITEM_ask_latest_rev(tItem,&cLatestRevTag);
-
-		rStatus = ITEM_ask_rev_id2(cLatestRevTag,&cLatestRev);
-	
-		if(isExported)
-		{
-			cAction = "Exported";
-		}
-		else
-		{
-			cAction = "Not Exported";
-		}
-		if (tc_strcmp(cItem_Rev.get(),cLatestRev.get())==0)
-		{
-
-			/*fprintf(pFile,"\n%s,%s,%s,%s,%s,%s,%s,%s,%s",
-			cItem_Id,cItem_Rev,cItem_Name,cPropValue,cAction,"NA","NA","NA","NA");*/
-			pFile << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),cPropValue.get(),cAction.get(),"NA","NA","NA","NA";
-		}
-		else
-		{
-			/*fprintf(pFile.get(),"\n%s,%s,%s,%s,%s,%s,%s,%s,%s",
-				cItem_Id,cItem_Rev,cItem_Name,cPropValue,cAction,"Y",cLatestRev,"Working","Skipped");*/
-				pFile << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),cPropValue.get(),cAction.get(),"Y",cLatestRev.get(),"Working","Skipped";
-		}
-	}
-	catch(const IFail &ex)
-	{
-		cout<<"\n uncepted exception captured "<<ex.getMessage()<< "please report errors.\n"<<endl;
-	}
-
-}
-
-/**
-    * Write .CSV file contain bomline which does not exported.
-	*
-	* Get the property from bomline tag using BOM_line_look_up_attribute 
-	* and write in csv file.This file contain data which is not loaded 
-	* by revsion rule(e.g ? will be there in structure manager) 
-	
-    @param bomline tag.
-    @return void.
-*/
-void write_csv_file2(tag_t tBomLine)
-{
-
-	ResultStatus rStatus;
-	scoped_smptr<char> cItem_Id;
-	scoped_smptr<char> cItem_Rev;
-	scoped_smptr<char> cItem_Name;
-
-	int iAttribute=0;
-
-	cout<<" File csv file2 wrting started for..."<<endl;
-
-	try
-	{
-		rStatus= BOM_line_look_up_attribute("bl_item_item_id",&iAttribute);
-		rStatus = BOM_line_ask_attribute_string (tBomLine,iAttribute,&cItem_Id);
-
-		rStatus = BOM_line_look_up_attribute("bl_item_object_name",&iAttribute);
-		rStatus = BOM_line_ask_attribute_string (tBomLine,iAttribute,&cItem_Name);
-
-		rStatus = BOM_line_look_up_attribute("bl_rev_item_revision_id",&iAttribute);
-		rStatus = BOM_line_ask_attribute_string (tBomLine,iAttribute,&cItem_Rev);
-
-		pFile2 << cItem_Id.get(),cItem_Rev.get(),cItem_Name.get(),"Working","Failed Rev Rule";
-
-	}
-	catch(const IFail &ex)
-	{
-		cout<<"\n uncepted exception captured "<<ex.getMessage()<< "please report errors.\n"<<endl;
-	}
-
-}
-
